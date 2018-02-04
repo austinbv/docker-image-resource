@@ -175,6 +175,10 @@ func fetchDigest(client *http.Client, manifestURL string) (string, bool) {
 	defer manifestResponse.Body.Close()
 
 	if manifestResponse.StatusCode == http.StatusNotFound {
+		// there's an intersting discussion here
+		// We could have it not fail if the image doesnt exist but instead just use the last one and keep
+		// looking for a new image with the new git sha. That could be pretty cool actually
+		log.Fatal("Tag Not Found")
 		return "", false
 	}
 
