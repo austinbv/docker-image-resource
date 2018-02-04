@@ -26,5 +26,5 @@ RUN set -e; for test in /tests/*.test; do \
 FROM resource
 
 RUN apk update && \
-    apk add git
+    apk add git openssh
 

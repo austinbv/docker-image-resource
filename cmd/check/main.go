@@ -70,22 +70,39 @@ func main() {
 
 	if request.Source.GitRepo != "" {
 		if request.Source.GitPrivateKey != "" {
-			privateKeyPath := "/tmp/private_key"
+			os.Mkdir("/root/.ssh", 0700)
+			privateKeyPath := "/root/.ssh/id_rsa"
 			err := ioutil.WriteFile(privateKeyPath, []byte(request.Source.GitPrivateKey), 0600)
-			log.Panic(err)
+			if err != nil {
+				log.Panic(err)
+			}
 
-			err = exec.Command("$(ssh agent)").Run()
-			log.Panic(err)
+			err = exec.Command("ssh-agent").Run()
+			if err != nil {
+				log.Panic(err)
+			}
 			exec.Command("ssh-add", privateKeyPath).Run()
 
-			os.Mkdir("/root/.ssh", 0700)
 			sshConfig := []byte(`
-				StrictHostKeyChecking no
-				LogLevel quiet
+StrictHostKeyChecking no
+LogLevel quiet
+
+Host github.braintreeps.tools
+	IdentityFile /root/.ssh/id_rsa
 				`)
 
 			err = ioutil.WriteFile("/root/.ssh/config", sshConfig, 0600)
-			log.Panic(err)
+			if err != nil {
+				log.Panic(err)
+			}
+
+			dat, err := ioutil.ReadFile(privateKeyPath)
+			if err != nil {
+				log.Panic(err)
+			}
+
+			os.Stderr.WriteString(string(dat))
+
 		}
 
 		os.Stderr.WriteString(request.Source.GitRepo)
