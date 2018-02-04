@@ -1,15 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -27,7 +30,7 @@ import (
 	"github.com/docker/distribution/registry/api/v2"
 	"github.com/docker/distribution/registry/client/auth"
 	"github.com/docker/distribution/registry/client/transport"
-	"github.com/hashicorp/go-multierror"
+	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pivotal-golang/clock"
 )
 
@@ -63,6 +66,22 @@ func main() {
 	tag := request.Source.Tag.String()
 	if tag == "" {
 		tag = "latest"
+	}
+
+	if request.Source.GitRepo != "" {
+		log.Println(request.Source.GitRepo)
+		cmd := exec.Command("git", "ls-remote", "-q", "--exit-code", request.Source.GitRepo, "master")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		err := cmd.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		output := out.String()
+		tag = strings.Split(output, "\t")[0]
+
+		log.Println(tag)
 	}
 
 	transport, registryURL := makeTransport(logger, request, registryHost, repo)
@@ -191,7 +210,7 @@ func makeTransport(logger lager.Logger, request CheckRequest, registryHost strin
 
 	pingClient := &http.Client{
 		Transport: retryRoundTripper(logger, authTransport),
-		Timeout: 1 * time.Minute,
+		Timeout:   1 * time.Minute,
 	}
 
 	challengeManager := auth.NewSimpleChallengeManager()

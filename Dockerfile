@@ -24,3 +24,7 @@ RUN set -e; for test in /tests/*.test; do \
 	done
 
 FROM resource
+
+RUN apk update && \
+    apk add git
+
