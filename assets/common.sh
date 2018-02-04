@@ -1,5 +1,6 @@
 LOG_FILE=${LOG_FILE:-/tmp/docker.log}
 SKIP_PRIVILEGED=${SKIP_PRIVILEGED:-false}
+export TMPDIR=${TMPDIR:-/tmp}
 
 sanitize_cgroups() {
   mkdir -p /sys/fs/cgroup
@@ -39,6 +40,28 @@ sanitize_cgroups() {
       ln -s "$mountpoint" "/sys/fs/cgroup/$sys"
     fi
   done
+}
+
+load_pubkey() {
+  local private_key_path=$TMPDIR/git-resource-private-key
+
+  (jq -r '.source.git_private_key // ""' < $1) > $private_key_path
+
+  if [ -s $private_key_path ]; then
+    chmod 0600 $private_key_path
+
+    eval $(ssh-agent) >/dev/null 2>&1
+    trap "kill $SSH_AGENT_PID" 0
+
+    SSH_ASKPASS=$(dirname $0)/askpass.sh DISPLAY= ssh-add $private_key_path >/dev/null
+
+    mkdir -p ~/.ssh
+    cat > ~/.ssh/config <<EOF
+StrictHostKeyChecking no
+LogLevel quiet
+EOF
+    chmod 0600 ~/.ssh/config
+  fi
 }
 
 start_docker() {

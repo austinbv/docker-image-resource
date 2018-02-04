@@ -30,7 +30,7 @@ username=$(jq -r '.source.username // ""' < $payload)
 password=$(jq -r '.source.password // ""' < $payload)
 repository="$(jq -r '.source.repository // ""' < $payload)"
 tag="$(jq -r '.source.tag // "latest"' < $payload)"
-git_repo="$(jq -r '.source.get_repo // ""' < $payload)"
+git_repo="$(jq -r '.source.git_repo // ""' < $payload)"
 git_private_key="$(jq -r '.source.git_private_key // ""' < $payload)"
 ca_certs=$(jq -r '.source.ca_certs // []' < $payload)
 client_certs=$(jq -r '.source.client_certs // []' < $payload)
@@ -46,23 +46,17 @@ else
   registry=
 fi
 
-echo "hello"
-echo $git_repo
-echo $git_private_key
-
-echo "by"
-if [ $git_repo -ne "" ]; then
-  if [ $git_private_key -ne "" ]; then
-    mkdir /root/.ssh
-    echo ${git_private_key} > /root/.ssh/id_rsa
-    eval $(ssh-agent)
-    ssh-add /root/.ssh/id_rsa
-    echo "StrictHostKeyChecking no" >> /root/.ssh/config
-    echo "LogLevel quiet" >> /root/.ssh/config
-  fi
-
-  tag="$(git ls-remote -q --exit-code $git_repo master | awk '{print $1}')"
-fi
+# if [ $git_repo -ne "" ]; then
+#   if [ $git_private_key -ne "" ]; then
+# 		echo "loading public key" >&2
+#   	load_pubkey $payload
+#   fi
+#
+#
+# 	echo "fetching git remote" >&2
+#   tag="$(git ls-remote -q --exit-code $git_repo master | awk '{print $1}')"
+# 	echo $tag >&2
+# fi
 
 digest="$(jq -r '.version.digest' < $payload)"
 
@@ -119,6 +113,18 @@ jq -n "{
     digest: $(echo $digest | jq -R .)
   },
   metadata: [
-    { name: \"image\", value: $(echo $image_id | head -c 12 | jq -R .) }
+    {
+      name: \"image\",
+      value: $(echo $image_id | head -c 12 | jq -R .)
+    },
+		{
+			name: \"git_repo\",
+			value: $(echo $git_repo | jq -R .)
+		},
+		{
+			name: \"docker_repo\",
+			value: $(echo $repository | jq -R .)
+ 		}
   ]
 }" >&3
+
