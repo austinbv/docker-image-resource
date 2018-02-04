@@ -69,7 +69,26 @@ func main() {
 	}
 
 	if request.Source.GitRepo != "" {
-		log.Println(request.Source.GitRepo)
+		if request.Source.GitPrivateKey != "" {
+			privateKeyPath := "/tmp/private_key"
+			err := ioutil.WriteFile(privateKeyPath, []byte(request.Source.GitPrivateKey), 0600)
+			log.Panic(err)
+
+			err = exec.Command("$(ssh agent)").Run()
+			log.Panic(err)
+			exec.Command("ssh-add", privateKeyPath).Run()
+
+			os.Mkdir("/root/.ssh", 0700)
+			sshConfig := []byte(`
+				StrictHostKeyChecking no
+				LogLevel quiet
+				`)
+
+			err = ioutil.WriteFile("/root/.ssh/config", sshConfig, 0600)
+			log.Panic(err)
+		}
+
+		os.Stderr.WriteString(request.Source.GitRepo)
 		cmd := exec.Command("git", "ls-remote", "-q", "--exit-code", request.Source.GitRepo, "master")
 		var out bytes.Buffer
 		cmd.Stdout = &out
@@ -81,7 +100,7 @@ func main() {
 		output := out.String()
 		tag = strings.Split(output, "\t")[0]
 
-		log.Println(tag)
+		os.Stderr.WriteString(tag)
 	}
 
 	transport, registryURL := makeTransport(logger, request, registryHost, repo)

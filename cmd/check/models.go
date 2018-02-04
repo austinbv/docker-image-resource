@@ -6,6 +6,7 @@ type Source struct {
 	Repository         string          `json:"repository"`
 	Tag                json.Number     `json:"tag"`
 	GitRepo            string          `json:"git_repo"`
+	GitPrivateKey      string          `json:"git_private_key"`
 	Username           string          `json:"username"`
 	Password           string          `json:"password"`
 	InsecureRegistries []string        `json:"insecure_registries"`
