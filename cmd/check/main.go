@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -77,47 +78,45 @@ func main() {
 				log.Panic(err)
 			}
 
-			err = exec.Command("ssh-agent").Run()
+			sshAddCmd := exec.Command("ssh-agent")
+			var sshAddOut bytes.Buffer
+			sshAddCmd.Stdout = &sshAddOut
+			err = sshAddCmd.Run()
+			socketInfo := sshAddOut.String()
+			re := regexp.MustCompile("([A-Z_]+)=(.*?);")
+
+			finds := re.FindAllStringSubmatch(socketInfo, -1)
+			os.Setenv(finds[0][1], finds[0][2])
+			os.Setenv(finds[1][1], finds[1][2])
+
 			if err != nil {
 				log.Panic(err)
 			}
-			exec.Command("ssh-add", privateKeyPath).Run()
+			err = exec.Command("ssh-add", privateKeyPath).Run()
+			if err != nil {
+				log.Panic(err)
+			}
 
 			sshConfig := []byte(`
 StrictHostKeyChecking no
 LogLevel quiet
-
-Host github.braintreeps.tools
-	IdentityFile /root/.ssh/id_rsa
 				`)
 
 			err = ioutil.WriteFile("/root/.ssh/config", sshConfig, 0600)
 			if err != nil {
 				log.Panic(err)
 			}
-
-			dat, err := ioutil.ReadFile(privateKeyPath)
-			if err != nil {
-				log.Panic(err)
-			}
-
-			os.Stderr.WriteString(string(dat))
-
 		}
-
-		os.Stderr.WriteString(request.Source.GitRepo)
 		cmd := exec.Command("git", "ls-remote", "-q", "--exit-code", request.Source.GitRepo, "master")
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		err := cmd.Run()
 		if err != nil {
-			log.Fatal(err)
+			log.Panic(err)
 		}
 
 		output := out.String()
 		tag = strings.Split(output, "\t")[0]
-
-		os.Stderr.WriteString(tag)
 	}
 
 	transport, registryURL := makeTransport(logger, request, registryHost, repo)
