@@ -112,6 +112,7 @@ LogLevel quiet
 		cmd.Stdout = &out
 		err := cmd.Run()
 		if err != nil {
+			os.Stderr.WriteString("Could not connect or auth with git repo\n")
 			log.Panic(err)
 		}
 
