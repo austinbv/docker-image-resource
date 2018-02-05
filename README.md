@@ -4,6 +4,17 @@ Tracks and builds [Docker](https://docker.io) images.
 
 Note: docker registry must be [v2](https://docs.docker.com/registry/spec/api/).
 
+## There are a couple things different with this image than the original
+
+* `git_repo`: *Optional.* A url for a git repo that you want to use as the tag. Right now
+you can only use master as the branch.
+
+* `git_private_key`: *Optional.* Private key for the git repo
+
+* `fail_when_missing`: *Optional.* Default: false. Even if you make a commit, until there is a new
+image available with the sha as the tag we will use an older image. If set to true the resource
+check will fail and halt the pipeline until there is a matching tag.
+
 ## Source Configuration
 
 * `repository`: *Required.* The name of the repository, e.g.
@@ -145,7 +156,7 @@ version is the image's digest.
   first pull `image:tag` from the Docker registry (so as to use cached
   intermediate images when building). This will cause the resource to fail
   if it is set to `true` and the image does not exist yet.
-  
+
 * `cache_tag`: *Optional.* Default `tag`. The specific tag to pull before
   building when `cache` parameter is set. Instead of pulling the same tag
   that's going to be built, this allows picking a different tag like
@@ -185,7 +196,7 @@ version is the image's digest.
   be tagged as `latest` in addition to whatever other tag was specified.
 
 * `build_args`: *Optional.*  A map of Docker build arguments.
-  
+
   Example:
 
   ```yaml
@@ -194,7 +205,7 @@ version is the image's digest.
     how_many_things: 2
     email: me@yopmail.com
   ```
-    
+
 * `build_args_file`: *Optional.* Path to a JSON file containing Docker build
   arguments.
 
@@ -202,7 +213,7 @@ version is the image's digest.
 
     ```yaml
     { "email": "me@yopmail.com", "how_many_things": 1, "do_thing": false }
-    ```            
+    ```
 
 
 ## Example

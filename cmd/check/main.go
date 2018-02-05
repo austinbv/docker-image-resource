@@ -140,7 +140,7 @@ LogLevel quiet
 	latestManifestURL, err := ub.BuildManifestURL(taggedRef)
 	fatalIf("failed to build latest manifest URL", err)
 
-	latestDigest, foundLatest := fetchDigest(client, latestManifestURL)
+	latestDigest, foundLatest := fetchDigest(client, latestManifestURL, request.Source.FailWhenMissing)
 
 	if request.Version.Digest != "" {
 		digestRef, err := reference.WithDigest(namedRef, digest.Digest(request.Version.Digest))
@@ -149,7 +149,7 @@ LogLevel quiet
 		cursorManifestURL, err := ub.BuildManifestURL(digestRef)
 		fatalIf("failed to build manifest URL", err)
 
-		cursorDigest, foundCursor := fetchDigest(client, cursorManifestURL)
+		cursorDigest, foundCursor := fetchDigest(client, cursorManifestURL, request.Source.FailWhenMissing)
 
 		if foundCursor && cursorDigest != latestDigest {
 			response = append(response, Version{cursorDigest})
@@ -163,7 +163,7 @@ LogLevel quiet
 	json.NewEncoder(os.Stdout).Encode(response)
 }
 
-func fetchDigest(client *http.Client, manifestURL string) (string, bool) {
+func fetchDigest(client *http.Client, manifestURL string, failWhenMissing bool) (string, bool) {
 	manifestRequest, err := http.NewRequest("GET", manifestURL, nil)
 	fatalIf("failed to build manifest request", err)
 	manifestRequest.Header.Add("Accept", "application/vnd.docker.distribution.manifest.v2+json")
@@ -178,7 +178,9 @@ func fetchDigest(client *http.Client, manifestURL string) (string, bool) {
 		// there's an intersting discussion here
 		// We could have it not fail if the image doesnt exist but instead just use the last one and keep
 		// looking for a new image with the new git sha. That could be pretty cool actually
-		log.Fatal("Tag Not Found")
+		if failWhenMissing {
+			log.Fatalf("A request for tag: %s has returned with a 404: Not Found\nThis could be because an image hasn't been pushed with a tag matching the sha of your git repo's master branch", manifestURL)
+		}
 		return "", false
 	}
 

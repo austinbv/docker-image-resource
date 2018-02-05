@@ -13,6 +13,7 @@ type Source struct {
 	RegistryMirror     string          `json:"registry_mirror"`
 	DomainCerts        []DomainCert    `json:"ca_certs"`
 	ClientCerts        []ClientCertKey `json:"client_certs"`
+	FailWhenMissing    bool            `json:"fail_when_missing"`
 
 	AWSAccessKeyID     string `json:"aws_access_key_id"`
 	AWSSecretAccessKey string `json:"aws_secret_access_key"`
